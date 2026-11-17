@@ -9,3 +9,9 @@ summaries/
 .hallmark/
 notes/
 settings.json
+
+# editor and agent config
+.idea
+.vscode
+.claude/
+.pytest_cache/
