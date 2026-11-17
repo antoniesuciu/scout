@@ -118,6 +118,7 @@ def state_json(availability, language):
             "engines": availability, "language": current_settings["language"], "preview": PREVIEW,
             "preferences": current_settings["ui"], "engine_models": current_settings["engine_models"],
             "model_choices": engines.model_choices(), "channels": current_settings["channels"],
+            "discovery": {k: current_settings[k] for k in ("mode", "max_per_channel", "max_age_days")},
             # removed videos stay in STATE so a later check does not bring them back
             "videos": [{**v, "len": su.fmt_duration(v.get("duration"))} for v in videos if not v.get("hidden")],
         }, ensure_ascii=False)
@@ -171,7 +172,7 @@ def new_session(only=None):
         s = {**s, "channels": [c for c in s["channels"] if c["name"] in only]}
     su.resolve_channel_ids(s, y)
     log(f"$ fetch youtube rss … {len(s['channels'])} channels")
-    found = su.get_candidates({**s, "mode": "latest"}, STATE["videos"], y)
+    found = su.get_candidates(s, STATE["videos"], y)
     new = [v for v in found if v["id"] not in STATE["videos"]]
     if new:
         log(f"$ yt-dlp -J --skip-download … metadata for {len(new)} video(s)")
@@ -215,7 +216,7 @@ ENGINES = {name: (lambda prompt, s, name=name: engines.run(name, prompt, s, log)
 
 def build_prompt(videos, language, length="standard"):
     points, style = LENGTHS[length]
-    parts = [TASK.format(language=su.LANG[language]["output_language"], points=points, style=style)]
+    parts = [TASK.format(language=su.lang_profile(language)["output_language"], points=points, style=style)]
     for v in videos:
         parts.append(f"\n=== ID: {v['id']} | CHANNEL: {v['channel']} | TITLE: {v['title']} "
                      f"| DATE: {v['date']} ===\n{v['transcript']}\n")
@@ -477,6 +478,26 @@ class Handler(BaseHTTPRequestHandler):
                     for i in ids:
                         STATE["videos"][i]["hidden"] = hidden
                     save()
+        elif self.path == "/api/creator":
+            # Rename a followed channel and relabel its videos already in the inbox.
+            old, new = body.get("old"), str(body.get("new") or "").strip()
+            current = settings()
+            if not (isinstance(old, str) and 0 < len(new) <= 80) or not any(c["name"] == old for c in current["channels"]):
+                error = "Unknown channel or empty name."
+            elif new != old and any(c["name"] == new for c in current["channels"]):
+                error = "Another followed channel already has that name."
+            else:
+                try:
+                    with LOCK:
+                        if BUSY[0]:
+                            return self.send(409, json.dumps({"error": "Wait for the current job before renaming."}))
+                        config.save({"channels": [{**c, "name": new} if c["name"] == old else c for c in current["channels"]]})
+                        for v in STATE["videos"].values():
+                            if v.get("from") == old:
+                                v["from"] = new
+                        save()
+                except (ValueError, OSError) as exc:
+                    error = str(exc)
         elif self.path == "/api/add":
             url = str(body.get("url") or "").strip()
             try:
@@ -489,7 +510,7 @@ class Handler(BaseHTTPRequestHandler):
             model = body.get("model")
             if body.get("profile", "isolated") != "isolated":
                 return self.send(400, json.dumps({"error":"Headless summaries always use isolated context."}))
-            if not (isinstance(ids, list) and ids and isinstance(engine, str) and engine in ENGINES and isinstance(language, str) and language in su.LANG):
+            if not (isinstance(ids, list) and ids and isinstance(engine, str) and engine in ENGINES and su.valid_language(language)):
                 error = "Bad run request."
             else:
                 try:

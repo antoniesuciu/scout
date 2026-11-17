@@ -37,6 +37,14 @@ Hello &amp; welcome
         with patch.object(pipeline, 'fetch_feed', return_value=videos):
             self.assertEqual([v['id'] for v in pipeline.get_candidates(settings, {'0': {}, '1': {}}, 'unused')], ['2', '3'])
 
+    def test_days_mode_skips_old_and_known_videos(self):
+        from datetime import datetime, timedelta
+        day = lambda n: (datetime.now() - timedelta(days=n)).strftime('%Y-%m-%d')
+        videos = [dict(id='new', date=day(1)), dict(id='known', date=day(2)), dict(id='old', date=day(30))]
+        settings = dict(test=False, channels=[dict(name='c')], mode='days', max_age_days=7, max_per_channel=5, max_total=5)
+        with patch.object(pipeline, 'fetch_feed', return_value=videos):
+            self.assertEqual([v['id'] for v in pipeline.get_candidates(settings, {'known': {}}, 'unused')], ['new'])
+
 
 class EngineTests(unittest.TestCase):
     def test_claude_is_tool_free_and_isolated(self):

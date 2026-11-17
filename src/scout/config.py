@@ -8,8 +8,8 @@ from . import pipeline
 PROVIDERS = ('claude', 'codex', 'gemini')
 MODEL = re.compile(r'[A-Za-z0-9][A-Za-z0-9_.:/-]{0,127}')
 UI_CHOICES = dict(theme=('ink','paper','phosphor'), font=('sans','serif','mono'),
-                  size=('s','m','l'), density=('comfortable','compact'), fileView=('rendered','raw'))
-UI_DEFAULTS = dict(theme='ink', font='sans', size='m', density='comfortable', fileView='rendered')
+                  size=('s','m','l'), density=('comfortable','compact'), fileView=('rendered','raw'), checkOnOpen=('off','on'))
+UI_DEFAULTS = dict(theme='ink', font='sans', size='m', density='comfortable', fileView='rendered', checkOnOpen='off', skipChannels=[], languages=[])
 
 
 def model_name(value):
@@ -54,10 +54,21 @@ def save(patch, path=None):
         raise ValueError('Unknown summarizer provider.')
     for value in result['engine_models'].values():
         model_name(value)
+    skip = result['ui'].get('skipChannels', [])
+    if not isinstance(skip, list) or len(skip) > 500 or not all(isinstance(n, str) and len(n) <= 200 for n in skip):
+        raise ValueError('skipChannels must be a list of channel names.')
     for key, value in result['ui'].items():
+        if key == 'skipChannels':
+            continue
+        if key == 'languages':
+            if not isinstance(value, list) or len(value) > 12 or not all(pipeline.valid_language(n) and n != 'en' for n in value):
+                raise ValueError('languages must be a short list of language names.')
+            continue
         if key not in UI_CHOICES or value not in UI_CHOICES[key]:
             raise ValueError('Invalid appearance preference: ' + key)
-    if result.get('language') not in pipeline.LANG:
+    if result.get('mode') not in ('latest','days'):
+        raise ValueError('mode must be "latest" or "days".')
+    if not pipeline.valid_language(result.get('language')):
         raise ValueError('Unsupported summary language.')
     for key, low, high in (('engine_timeout',10,3600),('warn_words',1,1000000),
                            ('max_per_channel',1,100),('max_total',1,100),('max_age_days',1,3650)):

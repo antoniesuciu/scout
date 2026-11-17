@@ -97,7 +97,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(scout.PREVIEW['model_calls'], 0)
         with patch.dict(scout.ENGINES, claude=lambda *a: self.fail('Cache hit called model')):
             scout.summarize_job(['a'], 'claude', 'en')
-        scout.prepare_job(['a'], 'claude', 'de')
+        scout.prepare_job(['a'], 'claude', 'Romanian')
         self.assertEqual(scout.PREVIEW['model_calls'], 1)
 
     def test_word_guard_and_settings_change_block_model(self):

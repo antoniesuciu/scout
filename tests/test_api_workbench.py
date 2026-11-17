@@ -16,6 +16,7 @@ class WorkbenchAPITests(unittest.TestCase):
         self.settings=self.base/'settings.json';self.settings.write_text('{"channels":[],"language":"en"}')
         self.stack=ExitStack()
         self.stack.enter_context(patch.object(app,'BASE',self.base))
+        self.stack.enter_context(patch.object(app,'STATE_PATH',self.base/'scout.json'))  # never touch the real inbox
         self.stack.enter_context(patch.object(app.su,'SETTINGS_PATH',self.settings))
         self.stack.enter_context(patch.object(app,'STATE',{'session':0,'videos':{'a':dict(id='a',date='2026-11-17')}}))
         self.stack.enter_context(patch.object(app.Handler,'engines',dict(claude=True,codex=True,gemini=True)))
@@ -23,6 +24,12 @@ class WorkbenchAPITests(unittest.TestCase):
         self.stack.enter_context(patch.object(app,'BUSY',[None]))
     def tearDown(self):self.stack.close();self.directory.cleanup()
     def post(self,path,body):return self.request('POST',path,json.dumps(body),{'Content-Type':'application/json'})
+
+    def test_discovery_window_is_validated_and_exposed(self):
+        self.assertEqual(self.post('/api/settings',{'mode':'days','max_age_days':14,'max_per_channel':4})[0],200)
+        self.assertEqual(json.loads(app.state_json({},'en'))['discovery'],{'mode':'days','max_per_channel':4,'max_age_days':14})
+        self.assertEqual(self.post('/api/settings',{'mode':'forever'})[0],400)
+        self.assertEqual(self.post('/api/settings',{'max_age_days':0})[0],400)
 
     def test_settings_save_is_internal_and_persisted(self):
         with patch.object(app.subprocess,'Popen') as opener:
@@ -51,6 +58,18 @@ class WorkbenchAPITests(unittest.TestCase):
             with patch.object(app,'start') as start:
                 status,body=self.post('/api/prepare',dict(ids=['a'],engine='claude',language='en',options={'depth':'text','length':length}))
                 self.assertEqual(status,400,body);self.assertIn(b'Invalid input mode',body);start.assert_not_called()
+
+    def test_renaming_a_channel_relabels_its_videos(self):
+        follow=lambda name,handle:dict(name=name,url='https://www.youtube.com/@'+handle,channel_id=None,group=None)
+        self.assertEqual(self.post('/api/settings',{'channels':[follow('old','a'),follow('other','b')]})[0],200)
+        app.STATE['videos']['a']['from']='old'
+        with patch.object(app,'save'):
+            self.assertEqual(self.post('/api/creator',{'old':'other','new':'old'})[0],400)  # duplicate name
+            self.assertEqual(self.post('/api/creator',{'old':'missing','new':'x'})[0],400)
+            self.assertEqual(self.post('/api/creator',{'old':'old','new':'   '})[0],400)
+            self.assertEqual(self.post('/api/creator',{'old':'old','new':' Nice name '})[0],200)
+        self.assertEqual([c['name'] for c in config.load(self.settings)['channels']],['Nice name','other'])
+        self.assertEqual(app.STATE['videos']['a']['from'],'Nice name')
 
     def test_removed_videos_leave_inbox_and_can_be_restored(self):
         self.assertEqual(self.post('/api/hide',{'ids':['a']})[0],200)

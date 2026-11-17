@@ -46,7 +46,7 @@
   "model": "haiku",
 
   // Language of the summary: "en" | "de"
-  "language": "de",
+  "language": "en",
 
   // Show a selection list before summarizing: true | false
   "show_selection": true,

@@ -53,7 +53,7 @@ SYSTEM_PROMPT = (
     "You only report what is actually said in the transcripts. No tools, no follow-up questions."
 )
 
-# Everything language-dependent in one place.
+# Everything language-dependent in one place. English is built in; other languages reuse its structure.
 LANG = {
     "en": {
         "output_language": "ENGLISH",
@@ -76,27 +76,20 @@ DATES: mentioned earnings, Fed dates etc. (only if mentioned) and their possible
         "none": '"none"',
         "price_label": "Current price",
     },
-    "de": {
-        "output_language": "DEUTSCH",
-        "headings": ("ALLGEMEINE MARKTLAGE", "AKTIEN IM DETAIL", "MEHRFACH ERWÄHNT", "UNEINIG", "TERMINE"),
-        "title": "SCOUT",
-        "videos": "Zusammengefasste Videos",
-        "date_fmt": "%d.%m.%Y",
-        "format": """ALLGEMEINE MARKTLAGE
-Pro Quelle: Einschätzung zum Gesamtmarkt, Makro-Themen (Zinsen, Fed, Inflation, Konjunktur), Stimmung, erwartete Entwicklung.
-
-AKTIEN IM DETAIL
-Pro Aktie: TICKER – Name
-  • Quelle: bullish/bearish/neutral, kauft/verkauft/hält (falls gesagt), Begründung in 1-2 Sätzen, Kursziele/Zeitraum (nur falls genannt)
-  • [[PRICE:TICKER]]   (diese Zeile NUR ergänzen, wenn der Sprecher konkrete Zahlen zu dieser Aktie nennt, z. B. Kurs, Kursziel, Einstieg; TICKER = reines US-Tickersymbol, z. B. [[PRICE:AMD]]; das Programm ersetzt sie durch den aktuellen Kurs)
-
-MEHRFACH ERWÄHNT: Ticker mit Anzahl Quellen
-UNEINIG: Aktien, bei denen sich die Quellen widersprechen
-TERMINE: genannte Earnings, Fed-Termine usw. (nur falls erwähnt) und inwiefern sie Einfluss auf den Markt nehmen (könnten)""",
-        "none": '"keine"',
-        "price_label": "Aktueller Kurs",
-    },
 }
+
+LANGUAGE_NAME = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ -]{1,29}")
+
+
+def valid_language(language):
+    """'en', or a plain language name the user added; the name ends up in the prompt, so letters only."""
+    return language == "en" or (isinstance(language, str) and bool(LANGUAGE_NAME.fullmatch(language)))
+
+
+def lang_profile(language):
+    if language == "en":
+        return LANG["en"]
+    return {**LANG["en"], "output_language": language.upper()}
 
 TASK = """Summarize the following transcripts of YouTube videos about stocks in {output_language} (even if the transcripts are in another language).
 Answer as PLAIN TEXT, no Markdown (no #, **, tables). Start directly with "{first_heading}". Use exactly this format:
@@ -219,8 +212,8 @@ def load_settings(args):
     if settings["mode"] not in ("latest", "unseen"):
         error('"mode" must be "latest" or "unseen".')
         sys.exit(1)
-    if settings["language"] not in LANG:
-        error('"language" must be "en" or "de".')
+    if not valid_language(settings["language"]):
+        error('"language" must be "en" or a language name such as "Romanian".')
         sys.exit(1)
     return settings
 
@@ -336,7 +329,7 @@ def get_candidates(settings, seen, ytdlp):
             pick = videos[:1]
         elif settings["mode"] == "latest":  # newest N per channel, whether seen or not
             pick = [v for v in videos if v["id"] not in seen][: settings["max_per_channel"]]
-        else:
+        else:  # "days": unseen videos from the last max_age_days, newest first
             limit = (datetime.now() - timedelta(days=settings["max_age_days"])).strftime("%Y-%m-%d")
             pick = [v for v in videos if not v["seen"] and v["date"] >= limit][: settings["max_per_channel"]]
         candidates += pick
@@ -512,7 +505,7 @@ def load_transcripts(chosen, settings, ytdlp):
 # ───────────────────────── 7. Claude ─────────────────────────
 
 def build_prompt(videos, language):
-    L = LANG[language]
+    L = lang_profile(language)
     parts = [TASK.format(output_language=L["output_language"], first_heading=L["headings"][0],
                          format=L["format"], none=L["none"])]
     for v in videos:
@@ -580,7 +573,7 @@ def insert_prices(summary, language):
     tickers = sorted(set(wanted.values()))
     with cf.ThreadPoolExecutor(max_workers=6) as ex:
         prices = dict(zip(tickers, ex.map(fetch_price, tickers)))
-    label = LANG[language]["price_label"]
+    label = lang_profile(language)["price_label"]
     for i, t in wanted.items():
         lines[i] = f"  • {label}: {prices[t]}" if prices[t] else None
     # leftover placeholders (malformed) are removed
@@ -591,7 +584,7 @@ def insert_prices(summary, language):
 
 def save_output(videos, summary, settings):
     now = datetime.now()
-    L = LANG[settings["language"]]
+    L = lang_profile(settings["language"])
     head = (f"═══ {L['title']} {now.strftime(L['date_fmt'])}{' (TEST)' if settings['test'] else ''} ═══\n"
             f"{L['videos']}: " + "; ".join(f"{v['channel']} – {v['title']}" for v in videos) + "\n\n")
     text = head + summary + "\n"
@@ -615,7 +608,7 @@ def main():
     p = argparse.ArgumentParser(description="Summarizes new YouTube stock videos with Claude.")
     p.add_argument("--mode", choices=["latest", "unseen"], help="overrides settings.json")
     p.add_argument("--model", help="e.g. haiku, sonnet, opus (overrides settings.json)")
-    p.add_argument("--language", choices=sorted(LANG), help="summary language: en or de (overrides settings.json)")
+    p.add_argument("--language", help="summary language: en (default) or a language name, e.g. Romanian (overrides settings.json)")
     p.add_argument("--test", action="store_true",
                    help="test mode: 1 video, only the first minutes, nothing is marked as seen")
     p.add_argument("--no-selection", action="store_true", help="skip the selection list (for automation)")
