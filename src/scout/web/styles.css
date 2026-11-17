@@ -136,9 +136,9 @@ details[open]>:not(summary){animation:sl-rise .28s var(--ease) backwards}
 /* brand mark */
 .brand{align-items:center}
 .mark{width:30px;height:30px;flex:none;align-self:center}
-.mark .tile{fill:#121417;stroke:var(--line);stroke-width:8}
-.mark .bar{fill:#F0542A;transform-box:fill-box;transform-origin:left center}
-.mark .cur{fill:#F5F5F3}
+.mark .tile{fill:var(--panel);stroke:var(--line);stroke-width:8}
+.mark .bar{fill:var(--accent);transform-box:fill-box;transform-origin:left center}
+.mark .cur{fill:var(--text)}
 
 /* job loader (star + verb shimmer), adapted from scout-loaders.html */
 .sl-star{display:inline-flex;align-items:baseline;gap:.6ch;font:13px/1.4 var(--mono);color:var(--text)}
@@ -174,3 +174,165 @@ details[open]>:not(summary){animation:sl-rise .28s var(--ease) backwards}
 .undo{position:fixed;left:50%;bottom:24px;translate:-50% 0;z-index:20;display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;
   background:var(--text);color:var(--bg);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.35);font-size:14px;max-width:calc(100vw - 32px)}
 .undo .btn{background:transparent;color:var(--bg);border-color:transparent;font-weight:600;min-height:36px}
+
+/* creators and following */
+.creators .seg{min-height:36px;font-size:12px}
+.discovery{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.discovery .field{width:auto;min-height:36px}
+.discovery input.field{width:5.5em}
+.follow-form{display:grid;grid-template-columns:1fr 1fr auto;gap:6px}
+@media (max-width:520px){.follow-form{grid-template-columns:1fr}}
+.channels li{min-height:44px}
+.creator-link{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;background:transparent;border:0;color:var(--text);padding:4px 6px;border-radius:6px;text-align:left}
+.creator-link b{font-weight:500;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.creator-link span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.creator-link:hover{background:var(--bg)}
+.icon.mini{width:32px;min-height:32px;color:var(--muted);border-color:transparent;text-decoration:none}
+.icon.mini:hover{color:var(--text)}
+.rename{flex:1 1 auto;display:flex;gap:6px;animation:sl-rise .2s var(--ease)}
+.rename .field{min-height:36px}.rename .btn{min-height:36px}
+
+/* ── Layout v2: the inbox fits the window; its list scrolls, Summarize stays in reach ── */
+@media (min-width:1000px){
+  .inbox{position:sticky;top:16px;max-height:calc(100dvh - 120px)}
+  .inbox-head{flex:none;max-height:45%;overflow-y:auto}
+  #list{flex:1 1 auto;min-height:140px;overflow-y:auto;overscroll-behavior:contain}
+  .controls{flex:none;max-height:55%;overflow-y:auto}
+}
+.controls{border-top:1px solid var(--line);gap:10px}
+.ai-options>summary{gap:10px;justify-content:space-between;min-height:40px}
+.ai-options>summary .small{flex:none}
+.ai-summary{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ai-body{gap:12px;padding:6px 0 4px}
+.run-row{display:grid;grid-template-columns:auto 1fr;gap:8px}
+.run-row .btn{min-height:48px;border-radius:8px}
+.pick-bar{display:flex;align-items:center;gap:4px;padding:2px 12px 2px 6px}
+.pick-bar #pick-count{flex:1 1 auto}
+.pick-bar .tick input{width:18px;height:18px;accent-color:var(--accent)}
+.dashed .only{margin-top:10px;padding:0 20px;align-self:flex-start}
+
+/* compact controls: fewer wrapped rows, so everything fits on a desktop screen */
+.controls .seg,.inbox-head .seg{min-height:36px}
+.inbox-head .field,.inbox-head .btn{min-height:40px}
+@media (min-width:900px){
+  .pop{width:680px}
+  #groups{display:grid!important;grid-template-columns:1fr 1fr;gap:14px 20px!important}
+  .pop .seg{min-height:36px}
+}
+
+/* ── Layout v3: inbox | reader | summarize, using the whole desktop width ── */
+.summarize{flex:1 1 400px;min-width:0}
+.summarize:has(#video-controls[hidden]){display:none}
+.summarize .controls{border-top:0;max-height:none}
+@media (min-width:1200px){
+  .scout{max-width:none}
+  .cols{display:grid;grid-template-columns:minmax(340px,400px) minmax(0,1fr) minmax(300px,340px);align-items:start}
+  .cols:has(#video-controls[hidden]){grid-template-columns:minmax(340px,400px) minmax(0,1fr)}
+  .right{order:2}
+  .summarize{order:3;position:sticky;top:16px;max-height:calc(100dvh - 120px);overflow-y:auto}
+  .inbox{position:sticky;top:16px;height:calc(100dvh - 120px);max-height:none}
+  .inbox-head{flex:none;max-height:55%;overflow-y:auto}
+  #list{flex:1 1 auto;min-height:140px;overflow-y:auto;overscroll-behavior:contain}
+}
+.inbox{order:1}.right{order:2}.summarize{order:3}
+.summarize .run-row{position:sticky;bottom:0;z-index:2;background:var(--panel);padding:10px 0 4px;margin-top:auto}
+.summarize .controls{min-height:100%}
+.creators{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px;scroll-behavior:smooth}
+.creators .seg{flex:none;white-space:nowrap}
+@media (min-width:1200px){
+  .summarize{display:flex;flex-direction:column;overflow:hidden}
+  .summarize .controls{flex:1 1 auto;min-height:0;overflow-y:auto;padding-bottom:0}
+}
+
+/* ── Polish: icon buttons, native controls, following list, new note ── */
+.scout .btn.icon{padding:0}
+.btn.icon svg{flex:none}
+.scout input[type="checkbox"]{appearance:none;-webkit-appearance:none;margin:0;width:18px;height:18px;border:1.5px solid var(--muted);border-radius:4px;background:transparent;display:grid;place-content:center;cursor:pointer;transition:background-color .15s var(--ease),border-color .15s var(--ease)}
+.scout input[type="checkbox"]::before{content:'';width:10px;height:6px;border-left:2px solid var(--accent-ink);border-bottom:2px solid var(--accent-ink);transform:translateY(-1px) rotate(-45deg) scale(0);transition:transform .15s var(--ease)}
+.scout input[type="checkbox"]:checked{background:var(--accent);border-color:var(--accent)}
+.scout input[type="checkbox"]:checked::before{transform:translateY(-1px) rotate(-45deg) scale(1)}
+.scout input[type="checkbox"]:indeterminate{background:var(--accent);border-color:var(--accent)}
+.scout input[type="checkbox"]:indeterminate::before{width:8px;height:0;border-left:0;transform:none}
+.scout input[type="checkbox"]:hover{border-color:var(--text)}
+.scout select.field{appearance:none;-webkit-appearance:none;padding-right:30px;background-color:var(--panel);color:var(--text);
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;background-size:5px 5px;background-repeat:no-repeat}
+.scout select.field option{background:var(--panel);color:var(--text)}
+.channels{gap:2px;margin-block:4px}
+.channels li{gap:2px;padding-right:2px;border-radius:8px;transition:background-color .15s var(--ease)}
+.channels li:hover,.channels li:focus-within{background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
+.channels .creator-link:hover{background:transparent}
+.channels .icon.mini{width:30px;min-height:30px;opacity:0;transition:opacity .15s var(--ease),color .15s var(--ease)}
+.channels li:hover .icon.mini,.channels li:focus-within .icon.mini{opacity:1}
+@media (hover:none){.channels .icon.mini{opacity:1}}
+.follow-form{grid-template-columns:1fr auto}
+.follow-form #follow-url{grid-column:1/-1}
+.discovery{color:var(--muted)}
+.note-form{display:grid;grid-template-columns:1fr auto auto;gap:6px}
+.note-form .field,.note-form .btn{min-height:40px}
+.note-editor{animation:sl-rise .28s var(--ease)}
+
+/* ── Inbox scrolls as one column (no nested scroll, never sideways); Following spacing ── */
+.inbox{overflow-x:hidden}.inbox-head{overflow-x:clip}
+@media (min-width:1000px){
+  .inbox{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+  .inbox-head,.scout .inbox-head{max-height:none;overflow-y:visible}
+  .scout #list{flex:none;min-height:0;overflow:visible}
+}
+#following{gap:10px}
+#following>summary+span{line-height:1.45}
+.channels li{padding-left:0}
+.channels .tick{width:28px;justify-content:flex-start}
+.channels .creator-link{padding:6px 4px}
+.follow-form{gap:8px}
+.discovery{gap:8px}
+.discovery .disc-label{flex-basis:100%}
+.discovery select.field{width:auto;flex:1 1 auto;max-width:150px}
+.discovery input.field{width:4.5em}
+.toggle{display:flex;align-items:center;gap:10px;min-height:36px;cursor:pointer;color:var(--muted)}
+#check-new{width:100%}
+
+/* ── Following, v3: channel badges, mode switch and steppers in one card ── */
+html[data-theme="paper"] .discovery{display:grid;grid-template-columns:1fr;gap:10px;padding:12px;border:1px solid var(--line);border-radius:10px;
+  background:color-mix(in srgb,var(--bg) 70%,var(--panel))}
+.discovery .disc-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.disc-modes{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:3px;border-radius:8px;background:var(--panel);border:1px solid var(--line)}
+.disc-modes .seg{min-height:34px;border:0;font-size:13px}
+.stepper-row{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--text)}
+.stepper{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:999px;background:var(--panel);border:1px solid var(--line)}
+.stepper button{width:30px;height:30px;border-radius:50%;border:0;background:transparent;color:var(--muted);font-size:17px;line-height:1;display:grid;place-items:center}
+.scout .stepper button:hover{background:var(--bg);color:var(--accent)}
+.stepper output{min-width:3.2ch;text-align:center;font:600 14px var(--mono);color:var(--accent);font-variant-numeric:tabular-nums}
+#check-new{border-color:color-mix(in srgb,var(--accent) 55%,var(--line));color:var(--accent);font-weight:600}
+.scout #check-new:hover:not(:disabled){background:color-mix(in srgb,var(--accent) 12%,var(--panel));border-color:var(--accent)}
+
+/* inbox filters: more breathing room between chips */
+.inbox-head .segs{gap:8px}
+.inbox-head .seg{padding:0 16px}
+.inbox-head .creators .seg{padding:0 14px}
+#addform{gap:8px!important}
+#addform .btn{padding:0 18px}
+.inbox-head{gap:12px}
+
+/* channel rows: long names wrap to a second line, actions never leave the panel */
+.channels li{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;column-gap:8px;padding:4px 6px 4px 0}
+.channels li .rename{grid-column:2/-1}
+.channels .creator-link{padding:4px 0;min-width:0}
+.channels .creator-link b{white-space:normal;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
+.ch-actions{display:flex;gap:0}
+.channels .icon.mini{width:28px;min-height:28px}
+
+/* Following: more room around the follow form and the check card */
+#following{gap:14px;padding-bottom:4px}
+.follow-form{gap:10px}
+.discovery{padding:16px;gap:14px}
+.disc-modes{padding:4px}
+.stepper-row{padding-inline:2px}
+.toggle{padding-inline:2px}
+#check-new{min-height:46px}
+
+/* summary language: add your own */
+.lang-add{display:flex;flex-wrap:wrap;gap:6px}
+.lang-add .btn{min-height:34px;padding:0 10px;color:var(--muted)}
+.lang-form{display:grid;grid-template-columns:1fr auto auto;gap:6px;width:100%;animation:sl-rise .2s var(--ease)}
+.lang-form .field,.lang-form .btn{min-height:36px}

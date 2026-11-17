@@ -65,66 +65,95 @@
   <section class="panel inbox" aria-label="Inbox">
     <div class="inbox-head">
       <div class="segs" id="views" role="group" aria-label="Workspace"></div>
-      <h2 class="title" id="inbox-title">Inbox</h2>
+      <h2 class="sr" id="inbox-title">Inbox</h2>
       <div id="video-toolbar">
       <div class="segs" id="filters" role="group" aria-label="Source"></div>
       <form id="addform" style="display:flex;gap:6px">
         <label for="addlink" class="sr">Paste a YouTube or public Reel link</label>
-        <input id="addlink" class="field sunk" type="url" placeholder="Paste a YouTube or public Reel link">
+        <input id="addlink" class="field sunk" type="url" placeholder="Paste a video or channel link">
         <button class="btn" style="padding:0 14px">Add</button>
       </form>
+      <div class="group" id="creators-row" hidden>
+        <span class="small muted">Creators</span>
+        <div class="segs creators" id="creators" role="group" aria-label="Show videos from"></div>
+      </div>
       <details id="following" class="group">
         <summary class="small muted" id="following-title">Following</summary>
         <span class="small muted">Untick a channel to skip it when checking. Checking is free: no AI is used.</span>
         <ul class="channels" id="channels"></ul>
-        <form id="follow-form" style="display:flex;gap:6px">
+        <form id="follow-form" class="follow-form">
           <label for="follow-url" class="sr">YouTube channel link to follow</label>
-          <input id="follow-url" class="field sunk" type="url" placeholder="https://www.youtube.com/@channel">
-          <button class="btn" style="padding:0 14px">Follow</button>
+          <input id="follow-url" class="field sunk" type="url" placeholder="youtube.com/@channel" required>
+          <label for="follow-name" class="sr">Name to show (optional)</label>
+          <input id="follow-name" class="field sunk" maxlength="80" placeholder="Display name (optional)">
+          <button class="btn">Follow</button>
         </form>
+        <div class="discovery small" id="discovery">
+          <span class="disc-label">Each check brings in</span>
+          <div class="segs disc-modes" id="disc-mode" role="group" aria-label="Which videos to bring in"><button type="button" class="seg" data-mode="latest">Newest uploads</button><button type="button" class="seg" data-mode="days">Recent days</button></div>
+          <div id="disc-days-wrap"><div class="stepper-row"><span>Days back</span><div class="stepper" data-key="max_age_days" data-min="1" data-max="3650"><button type="button" data-step="-1" aria-label="Fewer days">&minus;</button><output id="disc-days" aria-live="polite"></output><button type="button" data-step="1" aria-label="More days">+</button></div></div></div>
+          <div class="stepper-row"><span>Per channel</span><div class="stepper" data-key="max_per_channel" data-min="1" data-max="100"><button type="button" data-step="-1" aria-label="Fewer videos">&minus;</button><output id="disc-per" aria-live="polite"></output><button type="button" data-step="1" aria-label="More videos">+</button></div></div>
+        </div>
+        <label class="toggle small"><input type="checkbox" id="check-on-open"> Check for new videos when Scout opens</label>
         <button class="btn" id="check-new">Check followed channels for new videos</button>
       </details>
       </div>
       <div class="group" id="library-toolbar" hidden>
         <div class="segs" id="library-filters" role="group" aria-label="Document kind"></div>
         <div class="between"><button class="btn" id="new-note">New note</button><button class="btn" id="import-note">Import .md or .txt</button></div>
+        <form id="note-form" class="note-form" hidden>
+          <label for="note-name" class="sr">Name for the new note</label>
+          <input id="note-name" class="field sunk" maxlength="120" placeholder="Name your note" required>
+          <button class="btn">Create</button>
+          <button type="button" class="btn ghost" id="note-cancel">Cancel</button>
+        </form>
         <input type="file" id="import-file" accept=".md,.txt,text/plain,text/markdown" hidden>
       </div>
     </div>
-    <div class="between pick-bar" id="pick-bar" hidden><span class="small muted" id="pick-count"></span><span class="segs"><button class="btn ghost" id="pick-all">Select all shown</button><button class="btn ghost" id="pick-none">Clear</button><button class="btn ghost" id="pick-remove">Remove selected</button></span></div>
+    <div class="pick-bar" id="pick-bar" hidden><label class="tick"><input type="checkbox" id="pick-master" aria-label="Select or clear all shown videos"></label><span class="small muted" id="pick-count"></span><button class="btn ghost" id="pick-remove">Remove selected</button></div>
     <div id="list"><div class="sl-skeleton" role="status" aria-label="Loading your inbox"><span style="width:92%"></span><span style="width:64%"></span><span style="width:85%"></span><span style="width:48%"></span></div></div>
+  </section>
+
+  <aside class="panel summarize" aria-label="Summarize">
     <div class="controls" id="video-controls">
-      <div class="choice">
-        <span class="small muted">AI app</span>
-        <div class="segs" id="engines" role="group" aria-label="Summarizer CLI"></div>
-      </div>
-      <div class="group"><label class="small muted" for="model">Model</label>
-        <input class="field" id="model" list="model-choices" placeholder="CLI default or exact model ID" autocomplete="off">
-        <datalist id="model-choices"></datalist>
-        <span class="small muted">Choose a suggestion or enter a model ID. Blank uses the CLI default.</span>
-      </div>
-      <div class="segs" id="run-modes" role="group" aria-label="Execution"></div>
-      <div class="group" id="terminal-options" hidden><div class="segs" id="profiles" role="group" aria-label="Terminal context"></div></div>
-      <span class="small muted" id="context-note">Headless summaries: no hooks, skills, memory or MCP.</span>
-      <div class="choice" id="depth-choice">
-        <span class="small muted">What the AI reads</span>
-        <div class="segs" id="depths" role="group" aria-label="What the summarizer reads"></div>
-      </div>
+      <h2 class="title">Summarize</h2>
       <div class="choice" id="length-choice">
         <span class="small muted">Summary length</span>
         <div class="segs" id="lengths" role="group" aria-label="Summary length"></div>
       </div>
-      <div id="frame-options" class="group" hidden>
-        <label class="small muted" for="frame-method">Frame sampling</label>
-        <select class="field" id="frame-method"><option value="periodic">Every 15 seconds</option><option value="visual">Visual cues in transcript</option><option value="manual">Manual timestamps</option></select>
-        <input class="field" id="frame-times" aria-label="Frame times in seconds" placeholder="Seconds, separated by commas" hidden>
-        <span class="small muted">Downloads video; up to 12 frames, local OCR only. The model receives text.</span>
-      </div>
-      <button class="btn" id="prepare">Prepare transcripts (free)</button>
+      <details class="ai-options" id="ai-options" open>
+        <summary><span class="small muted">AI options</span><span class="mono muted ai-summary" id="ai-summary"></span></summary>
+        <div class="group ai-body">
+          <div class="choice">
+            <span class="small muted">AI app</span>
+            <div class="segs" id="engines" role="group" aria-label="Summarizer CLI"></div>
+          </div>
+          <div class="group"><label class="small muted" for="model">Model</label>
+            <input class="field" id="model" list="model-choices" placeholder="CLI default or exact model ID" autocomplete="off">
+            <datalist id="model-choices"></datalist>
+          </div>
+          <div class="choice" id="depth-choice">
+            <span class="small muted">What the AI reads</span>
+            <div class="segs" id="depths" role="group" aria-label="What the summarizer reads"></div>
+          </div>
+          <div id="frame-options" class="group" hidden>
+            <label class="small muted" for="frame-method">Frame sampling</label>
+            <select class="field" id="frame-method"><option value="periodic">Every 15 seconds</option><option value="visual">Visual cues in transcript</option><option value="manual">Manual timestamps</option></select>
+            <input class="field" id="frame-times" aria-label="Frame times in seconds" placeholder="Seconds, separated by commas" hidden>
+            <span class="small muted">Downloads video; up to 12 frames, local OCR only. The model receives text.</span>
+          </div>
+          <div class="segs" id="run-modes" role="group" aria-label="Execution"></div>
+          <div class="group" id="terminal-options" hidden><div class="segs" id="profiles" role="group" aria-label="Terminal context"></div></div>
+          <span class="small muted" id="context-note">Headless summaries: no hooks, skills, memory or MCP.</span>
+        </div>
+      </details>
       <span class="small muted" id="note" aria-live="polite"></span>
-      <button class="run" id="run"></button>
+      <div class="run-row">
+        <button class="btn" id="prepare">Prepare (free)</button>
+        <button class="run" id="run"></button>
+      </div>
     </div>
-  </section>
+  </aside>
 
   <div class="right">
     <article class="panel reader" id="reader" aria-live="polite"></article>

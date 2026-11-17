@@ -4,6 +4,9 @@ globalThis.FileLibrary = class {
     Object.assign(this, {$, esc, changed, notify});
     this.files=[];this.document=null;this.loading=false;this.loaded=false;this.editing=false;this.dirty=false;
     $('new-note').onclick=()=>this.newNote();
+    $('note-cancel').onclick=()=>this.closeNoteForm();
+    $('note-form').onsubmit=event=>{event.preventDefault();this.createNote($('note-name').value.trim());};
+    $('note-form').onkeydown=event=>{if(event.key==='Escape')this.closeNoteForm();};
     $('import-note').onclick=()=>$('import-file').click();
     $('import-file').onchange=async event=>{
       const file=event.target.files[0];if(!file)return;
@@ -64,11 +67,18 @@ globalThis.FileLibrary = class {
     while(this.files.some(file=>file.key===key))key=`notes/${base}-${index++}${extension}`;
     await this.request('/api/document',{key,text});await this.refresh();await this.select(key);this.notify('File saved in your library.');
   }
-  async newNote(){
+  newNote(){
     if(!this.canLeave())return;
-    const name=prompt('Note name','Untitled.md');if(!name)return;
+    const form=this.$('note-form');
+    if(!form.hidden){this.$('note-name').focus();return;}
+    this.$('note-name').value='';Motion.show(form);this.$('new-note').setAttribute('aria-expanded','true');this.$('note-name').focus();
+  }
+  closeNoteForm(){Motion.hide(this.$('note-form'));this.$('new-note').setAttribute('aria-expanded','false');this.$('new-note').focus();}
+  async createNote(name){
+    if(!name)return;
     this.dirty=false;this.editing=false;
-    try{await this.storeUnique(/\.(md|txt)$/i.test(name)?name:name+'.md','# '+name.replace(/\.(md|txt)$/i,'')+'\n\n');this.editing=true;this.changed();}
+    try{await this.storeUnique(/\.(md|txt)$/i.test(name)?name:name+'.md','# '+name.replace(/\.(md|txt)$/i,'')+'\n\n');this.closeNoteForm();this.editing=true;this.changed();
+      requestAnimationFrame(()=>{const ed=this.$('note-editor');if(ed){ed.focus();ed.setSelectionRange(ed.value.length,ed.value.length);}});}
     catch(error){this.notify(error.message);}
   }
   async openExternal(){
