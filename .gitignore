@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+scout.json
+seen.json
+transcripts/
+summaries/
+.cache/
+.hallmark/
+notes/
+settings.json

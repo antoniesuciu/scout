@@ -1,0 +1,2 @@
+# Optional local speech recognition; no model weights are downloaded by Scout.
+faster-whisper==1.2.1

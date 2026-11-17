@@ -1,0 +1,69 @@
+// Comments with // are allowed. Command-line options override these values for a single run only.
+{
+  // Channels. "group": channels with the same group count as ONE source (use null for none).
+  // "channel_id": leave null for a new channel, it is filled in automatically on the first run.
+  "channels": [
+    {
+      "name": "Financial Education",
+      "url": "https://www.youtube.com/@FinancialEducation",
+      "channel_id": "UCnMn36GT_H0X-w5_ckLtlgQ",
+      "group": "Jeremy Lefebvre"
+    },
+    {
+      "name": "Jeremy Lefebvre Makes Money",
+      "url": "https://www.youtube.com/@jeremylefebvremakesmoney7934",
+      "channel_id": "UC12lnsYNt8_VthTNOuOGTmQ",
+      "group": "Jeremy Lefebvre"
+    },
+    {
+      "name": "aktien4future",
+      "url": "https://www.youtube.com/@aktien4future",
+      "channel_id": "UC_IGZtymMHplRJ4rH8RS6FA",
+      "group": null
+    },
+    {
+      "name": "Felix Nikolas Prehn",
+      "url": "https://www.youtube.com/@FelixPrehn",
+      "channel_id": "UCJtfma0mE_XrBAD9uakcjfA",
+      "group": null
+    }
+  ],
+
+  // Which videos: "latest" = the newest videos per channel, seen or not (limited by max_per_channel and max_total)
+  //               "unseen" = only videos not yet summarized (additionally limited by max_age_days)
+  "mode": "latest",
+
+  // At most this many videos per channel, newest first (number)
+  "max_per_channel": 2,
+
+  // Mode "unseen" only: ignore videos older than this many days (number)
+  "max_age_days": 21,
+
+  // Upper limit of videos per run, newest first (number)
+  "max_total": 8,
+
+  // Claude model: "haiku" (cheapest) | "sonnet" | "opus"
+  "model": "haiku",
+
+  // Language of the summary: "en" | "de"
+  "language": "de",
+
+  // Show a selection list before summarizing: true | false
+  "show_selection": true,
+
+  // Ask for confirmation if the total text exceeds this many words (number)
+  "warn_words": 60000,
+
+  // Test mode always on: true | false (single run: --test)
+  "test": false,
+
+  // Test mode: length of the transcript excerpt in minutes (number)
+  "test_minutes": 5,
+
+  // Maximum seconds for a headless subscription CLI (no automatic retry).
+  "engine_timeout": 180,
+
+  // Optional preinstalled local CTranslate2 Whisper model, e.g. .venv/models/whisper-base.
+  // No model download is performed by Scout.
+  "whisper_model_path": null
+}
