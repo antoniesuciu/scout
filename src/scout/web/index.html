@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="Scout: a local video inbox, transcript reader and subscription CLI summarizer.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>scout</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600&amp;family=Source+Serif+4:wght@400;600&amp;display=swap">
+<link rel="stylesheet" href="/assets/styles.css">
+<link rel="icon" href="/assets/scout.svg" type="image/svg+xml">
+</head>
+<body>
+<noscript>Scout needs JavaScript for its local dashboard. Enable it and reload.</noscript>
+<div class="scout" id="app">
+
+<header>
+  <div class="brand"><svg class="mark" id="mark" viewBox="0 0 256 256" aria-hidden="true"><rect class="tile" width="256" height="256" rx="58"/><rect class="bar" style="--i:0" x="44" y="62" width="14" height="13" rx="6.5"/><rect class="bar" style="--i:1" x="44" y="82" width="47" height="13" rx="6.5"/><rect class="bar" style="--i:2" x="44" y="102" width="79" height="13" rx="6.5"/><rect class="bar" style="--i:3" x="44" y="122" width="112" height="13" rx="6.5"/><rect class="bar" style="--i:4" x="44" y="142" width="79" height="13" rx="6.5"/><rect class="bar" style="--i:5" x="44" y="162" width="47" height="13" rx="6.5"/><rect class="bar" style="--i:6" x="44" y="182" width="14" height="13" rx="6.5"/><rect class="cur" x="170" y="182" width="44" height="13" rx="6.5"/></svg><b>scout</b><span class="mono muted" id="sub" aria-live="polite"></span><span id="activity" role="status"></span></div>
+  <div class="search">
+    <label for="search" class="sr">Search every video and summary</label>
+    <input id="search" class="field" type="search" placeholder="Search videos and summaries">
+  </div>
+  <button class="btn" id="session">Check for new videos</button>
+  <div style="position:relative">
+    <button class="btn icon" id="gear" aria-label="Settings" aria-expanded="false">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 5h7M14 5h3M3 10h3M10 10h7M3 15h9M16 15h1"></path><circle cx="12" cy="5" r="2"></circle><circle cx="8" cy="10" r="2"></circle><circle cx="14" cy="15" r="2"></circle></svg>
+    </button>
+    <section class="pop" id="pop" aria-label="Settings" hidden>
+      <div class="between">
+        <h2 class="title">Settings</h2>
+        <button class="btn ghost muted" id="close" style="border:0">Close</button>
+      </div>
+      <div id="groups" class="group" style="gap:14px"></div>
+      <div class="reading-sample reader-text" id="font-preview">Your notes, in your reading style. Save to apply this preview to the workspace.</div>
+      <div class="segs"><button class="btn" id="save-appearance">Save reading style</button><button class="btn" id="revert-appearance">Revert</button></div>
+      <div class="group"><label class="small muted" for="default-model">Default model for the selected provider</label>
+        <input class="field" id="default-model" placeholder="Blank uses the CLI default">
+        <button class="btn" id="save-default-model">Save model default</button>
+      </div>
+      <details><summary>Channels and runtime settings</summary>
+        <label class="sr" for="settings-json">Settings JSON</label>
+        <textarea id="settings-json" class="field config-editor" spellcheck="false"></textarea>
+        <button class="btn" id="save-settings">Save settings</button>
+      </details>
+      <span class="small muted" id="settings-status" role="status"></span>
+      <div class="group" style="border-top:1px solid var(--line);padding-top:12px">
+        <span class="small muted">Instagram session</span>
+        <div class="between">
+          <span class="mono">Public links only</span>
+          <button class="btn ghost" disabled title="Saved Instagram is deferred">Reconnect</button>
+        </div>
+      </div>
+
+    </section>
+  </div>
+  <div id="desktop-controls" class="window-controls" role="group" aria-label="Window controls" hidden>
+    <button class="btn icon" data-window-action="minimize" aria-label="Minimize window"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"><path d="M3 10h10"/></svg></button>
+    <button class="btn icon" data-window-action="maximize" aria-label="Maximize or restore window"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"><rect x="3" y="3" width="10" height="10"/></svg></button>
+    <button class="btn icon" data-window-action="close" aria-label="Close window"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"><path d="m4 4 8 8m0-8-8 8"/></svg></button>
+  </div>
+</header>
+<p id="feedback" class="feedback" role="status" hidden></p>
+<div class="undo" id="undo" role="status" hidden><span id="undo-text"></span><button class="btn ghost" id="undo-button">Undo</button></div>
+
+<div class="cols">
+  <section class="panel inbox" aria-label="Inbox">
+    <div class="inbox-head">
+      <div class="segs" id="views" role="group" aria-label="Workspace"></div>
+      <h2 class="title" id="inbox-title">Inbox</h2>
+      <div id="video-toolbar">
+      <div class="segs" id="filters" role="group" aria-label="Source"></div>
+      <form id="addform" style="display:flex;gap:6px">
+        <label for="addlink" class="sr">Paste a YouTube or public Reel link</label>
+        <input id="addlink" class="field sunk" type="url" placeholder="Paste a YouTube or public Reel link">
+        <button class="btn" style="padding:0 14px">Add</button>
+      </form>
+      <details id="following" class="group">
+        <summary class="small muted" id="following-title">Following</summary>
+        <span class="small muted">Untick a channel to skip it when checking. Checking is free: no AI is used.</span>
+        <ul class="channels" id="channels"></ul>
+        <form id="follow-form" style="display:flex;gap:6px">
+          <label for="follow-url" class="sr">YouTube channel link to follow</label>
+          <input id="follow-url" class="field sunk" type="url" placeholder="https://www.youtube.com/@channel">
+          <button class="btn" style="padding:0 14px">Follow</button>
+        </form>
+        <button class="btn" id="check-new">Check followed channels for new videos</button>
+      </details>
+      </div>
+      <div class="group" id="library-toolbar" hidden>
+        <div class="segs" id="library-filters" role="group" aria-label="Document kind"></div>
+        <div class="between"><button class="btn" id="new-note">New note</button><button class="btn" id="import-note">Import .md or .txt</button></div>
+        <input type="file" id="import-file" accept=".md,.txt,text/plain,text/markdown" hidden>
+      </div>
+    </div>
+    <div class="between pick-bar" id="pick-bar" hidden><span class="small muted" id="pick-count"></span><span class="segs"><button class="btn ghost" id="pick-all">Select all shown</button><button class="btn ghost" id="pick-none">Clear</button><button class="btn ghost" id="pick-remove">Remove selected</button></span></div>
+    <div id="list"><div class="sl-skeleton" role="status" aria-label="Loading your inbox"><span style="width:92%"></span><span style="width:64%"></span><span style="width:85%"></span><span style="width:48%"></span></div></div>
+    <div class="controls" id="video-controls">
+      <div class="choice">
+        <span class="small muted">AI app</span>
+        <div class="segs" id="engines" role="group" aria-label="Summarizer CLI"></div>
+      </div>
+      <div class="group"><label class="small muted" for="model">Model</label>
+        <input class="field" id="model" list="model-choices" placeholder="CLI default or exact model ID" autocomplete="off">
+        <datalist id="model-choices"></datalist>
+        <span class="small muted">Choose a suggestion or enter a model ID. Blank uses the CLI default.</span>
+      </div>
+      <div class="segs" id="run-modes" role="group" aria-label="Execution"></div>
+      <div class="group" id="terminal-options" hidden><div class="segs" id="profiles" role="group" aria-label="Terminal context"></div></div>
+      <span class="small muted" id="context-note">Headless summaries: no hooks, skills, memory or MCP.</span>
+      <div class="choice" id="depth-choice">
+        <span class="small muted">What the AI reads</span>
+        <div class="segs" id="depths" role="group" aria-label="What the summarizer reads"></div>
+      </div>
+      <div class="choice" id="length-choice">
+        <span class="small muted">Summary length</span>
+        <div class="segs" id="lengths" role="group" aria-label="Summary length"></div>
+      </div>
+      <div id="frame-options" class="group" hidden>
+        <label class="small muted" for="frame-method">Frame sampling</label>
+        <select class="field" id="frame-method"><option value="periodic">Every 15 seconds</option><option value="visual">Visual cues in transcript</option><option value="manual">Manual timestamps</option></select>
+        <input class="field" id="frame-times" aria-label="Frame times in seconds" placeholder="Seconds, separated by commas" hidden>
+        <span class="small muted">Downloads video; up to 12 frames, local OCR only. The model receives text.</span>
+      </div>
+      <button class="btn" id="prepare">Prepare transcripts (free)</button>
+      <span class="small muted" id="note" aria-live="polite"></span>
+      <button class="run" id="run"></button>
+    </div>
+  </section>
+
+  <div class="right">
+    <article class="panel reader" id="reader" aria-live="polite"></article>
+    <section class="panel log" id="log" aria-label="Process log">
+      <h2 class="label">Process log</h2>
+      <div class="lines" id="lines" tabindex="0"></div>
+    </section>
+  </div>
+</div>
+</div>
+
+<script src="/assets/motion.js" defer></script>
+<script src="/assets/loaders.js" defer></script>
+<script src="/assets/markdown.js" defer></script>
+<script src="/assets/library-ui.js" defer></script>
+<script src="/assets/settings-ui.js" defer></script>
+<button id="desktop-resize" class="native-resize btn icon" aria-label="Resize window" hidden><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"><path d="m4 13 9-9m-4 9 4-4"/></svg></button>
+<script src="/assets/app.js" defer></script>
+<script src="/assets/desktop-ui.js" defer></script>
+</body>
+</html>

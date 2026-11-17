@@ -1,0 +1,13 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const context=vm.createContext({});vm.runInContext(fs.readFileSync('src/scout/web/markdown.js','utf8'),context);
+const render=context.renderMarkdown;
+assert.match(render('# A note\n\n**Bold** with `code`'),/<h1>A note<\/h1>/);
+assert.match(render('**Bold**'),/<strong>Bold<\/strong>/);
+assert.match(render('- One\n- Two'),/<ul>\s*<li>One<\/li>\s*<li>Two<\/li>\s*<\/ul>/);
+assert.match(render('```js\n<script>evil()</script>\n```'),/&lt;script&gt;evil\(\)&lt;\/script&gt;/);
+assert.doesNotMatch(render('<img src=x onerror=evil()>'),/<img/);
+assert.doesNotMatch(render('[bad](javascript:evil())'),/href=/);
+assert.doesNotMatch(render('[bad](data:text/html,bad)'),/href=/);
+assert.match(render('[source](https://example.com)'),/rel="noopener noreferrer"/);
+assert.equal(render('`**literal**`'),'<p><code>**literal**</code></p>');
+console.log('Markdown checks passed: headings, lists, code, safe links and escaped HTML.');
