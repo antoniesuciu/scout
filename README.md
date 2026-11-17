@@ -12,7 +12,11 @@ python3 -m venv .venv
 ```
 
 In the inbox, **Following** lists the YouTube channels you follow: add one by its channel link,
-remove one, or check them all for new videos (no model calls). **Summary length** picks Brief,
+give it a display name, rename it, check just that channel, or untick it to skip it (remembered in
+`settings.json`). Checking costs no model calls; tick **Check for new videos when Scout opens** to do it on
+launch (off by default). Each check brings in the newest uploads or the last N days, up to N per channel. Pasting a channel link into the video field follows it.
+**Creators** filters the inbox by channel. Remove videos with the × on a row (Undo for 8 s); later
+checks will not bring them back. On a wide window the layout is inbox | reader | Summarize. **Summary length** picks Brief,
 Standard, Deep dive (timestamped points) or Plain words (jargon explained) per run.
 
 Desktop mode currently targets **Ubuntu with GTK3/WebKit2**. It uses a frameless native window
@@ -138,6 +142,7 @@ Google Fonts link, with system fallbacks offline.
 node tests/test_ui.cjs
 node tests/test_settings_ui.cjs
 node tests/test_markdown.cjs
+node tests/e2e_browser.mjs   # real headless Chromium on a throwaway copy; no model calls, never touches your inbox
 ```
 
 Explicit live checks consume a small amount of subscription quota and keep isolation enabled:
